@@ -83,3 +83,9 @@ class BaseFPGAConfig extends Config(new BaseConfig)
 
 class DefaultFPGAConfig extends Config(new WithNSmallCores(1) ++ new BaseFPGAConfig)
 class DefaultFPGASmallConfig extends Config(new DefaultFPGAConfig)
+
+class PYNQConfig extends Config(
+  new WithNoSlavePort ++
+  new WithNoMMIOPort ++
+  new DefaultFPGAConfig
+)

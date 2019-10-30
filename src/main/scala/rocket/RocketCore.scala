@@ -807,6 +807,22 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   io.fpu.dmem_resp_tag := dmem_resp_waddr
   io.fpu.keep_clock_enabled := io.ptw.customCSRs.disableCoreClockGate
 
+  
+  val dfc = Module(new DFCache(4))
+  dfc.io.req := ex_reg_valid && ex_ctrl.mem && !ex_reg_replay
+  dfc.io.cmd := ex_ctrl.mem_cmd
+  dfc.io.addr := encodeVirtualAddress(ex_rs(0), alu.io.adder_out)
+  dfc.io.data_in := ex_rs(1)
+  val DFC_found = ShiftRegister(dfc.io.data_out_valid,1,ex_reg_valid && !ex_reg_replay)
+  val DFC_value = ShiftRegister(dfc.io.data_out,1,ex_reg_valid && !ex_reg_replay)
+  
+  when(io.dmem.resp.valid && DFC_found && io.dmem.resp.bits.has_data) {
+        printf("[DFC] Mem: %x %x %x\n",DFC_value,io.dmem.resp.bits.addr,io.dmem.resp.bits.data)
+    }
+  
+  //when(io.dmem.req.valid) { printf("[DFC] Command mem PC=%x %x %x %x\n", ex_reg_pc, io.dmem.req.bits.cmd, io.dmem.req.bits.addr, ex_rs(1)) }
+  
+  // MEMORY REQUEST HERE!!!
   io.dmem.req.valid     := ex_reg_valid && ex_ctrl.mem
   val ex_dcache_tag = Cat(ex_waddr, ex_ctrl.fp)
   require(coreDCacheReqTagBits >= ex_dcache_tag.getWidth)
